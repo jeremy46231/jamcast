@@ -1,0 +1,12 @@
+{
+  "build": {
+    "dockerfile": "../Dockerfile"
+  },
+  "mounts": [
+    {
+      "type": "volume",
+      "source": "librespot_rust_bin",
+      "target": "/root/.cargo/bin"
+    }
+  ]
+}
