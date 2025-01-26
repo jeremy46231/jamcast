@@ -2,13 +2,14 @@ import { nanoid } from 'nanoid'
 import GstWebRTCAPI from './gst-plugins-rs/net/webrtc/gstwebrtc-api/src/gstwebrtc-api.js'
 export type { GstWebRTCAPI }
 
-export const streamCallbacks = new Set<(stream: MediaStream | null) => void>()
+const streamCallbacks = new Set<(stream: MediaStream | null) => void>()
 let api: GstWebRTCAPI
 
-export function connect() {
-  if (!('window' in globalThis)) return
+export function webRTCConnect() {
+  if (!('window' in globalThis))
+    throw new Error('This function can only be called in a browser context')
   if (api) return streamCallbacks
-  
+
   const id = nanoid() // Unique ID for the client
   api = new GstWebRTCAPI({
     signalingServerUrl: `ws://129.146.216.190:46232`,
@@ -43,6 +44,8 @@ export function connect() {
       currentSession.close()
     }
     const session = api.createConsumerSession(id) // Create a new consumer
+    console.log('WebRTC session created:', session)
+
     session.addEventListener(
       'error',
       (error: { message: unknown; error: unknown }) => {
@@ -79,9 +82,55 @@ export function connect() {
   })
   findStream()
 
+  const audioElement = document.createElement('audio')
+  audioElement.autoplay = true
+  // audioElement.muted = true
+  audioElement.controls = true
+  document.body.insertBefore(audioElement, document.body.firstChild)
+
   function streamCallback(stream: MediaStream | null) {
+    if (stream) audioElement.srcObject = stream
     streamCallbacks.forEach((callback) => callback(stream))
+    ;(globalThis as any)['currentWebRTCStream'] = stream
   }
-  
+
   return streamCallbacks
+}
+
+if ('document' in globalThis) {
+  let testStream: MediaStream | null = null
+  streamCallbacks.add((stream) => {
+    testStream = stream
+  })
+  setInterval(async () => {
+    const stream = testStream
+    if (!stream) return
+
+    const audioContext = new AudioContext()
+    const source = audioContext.createMediaStreamSource(stream)
+    const analyser = audioContext.createAnalyser()
+    source.connect(analyser)
+
+    analyser.fftSize = 256
+    const bufferLength = analyser.frequencyBinCount
+    const dataArray = new Uint8Array(bufferLength)
+    const volumeArray: number[] = []
+
+    for (let i = 0; i < 10; i++) {
+      analyser.getByteFrequencyData(dataArray)
+
+      // Calculate the average volume level from the frequency data
+      let total = 0
+      for (let i = 0; i < bufferLength; i++) {
+        total += dataArray[i]
+      }
+
+      const averageVolume = total / bufferLength
+      volumeArray.push(averageVolume)
+
+      await new Promise((resolve) => requestAnimationFrame(resolve))
+    }
+    console.log('[jamcast]', 'Volume Array:', volumeArray.join(', '))
+    await audioContext.close()
+  }, 2000)
 }

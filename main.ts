@@ -1,10 +1,28 @@
-import puppeteer, { type Browser } from 'puppeteer'
+import puppeteer, { type Page, type Browser } from 'puppeteer'
+import * as esbuild from 'esbuild'
+import fs from 'fs/promises'
 
 // Launch the browser and open a new blank page
 const browser = await puppeteer.launch({
-  executablePath: '/snap/chromium/current/usr/lib/chromium-browser/chrome',
-  args: ['--auto-accept-camera-and-microphone-capture'],
-  ignoreDefaultArgs: ['--mute-audio'],
+  // dumpio: true,
+
+  // browser: 'chrome',
+  // executablePath: '/snap/chromium/current/usr/lib/chromium-browser/chrome',
+  // args: [
+  //   '--unsafely-treat-insecure-origin-as-secure=ws://129.146.216.190:46232,ws://localhost:46232',
+  //   '--autoplay-policy=no-user-gesture-required',
+  //   '--remote-debugging-port=9222',
+  //   '--remote-debugging-address=0.0.0.0',
+  //   '--no-sandbox',
+  //   '--enable-logging=stderr',
+  // ],
+  // // ignoreDefaultArgs: ['--mute-audio'],
+
+  browser: 'firefox',
+  executablePath: '/usr/bin/firefox',
+  args: ['--profile', 'firefox-profile', '-start-debugger-server', '9222'],
+  headless: true,
+
   defaultViewport: { width: 1920, height: 1080 },
 })
 
@@ -29,10 +47,22 @@ async function login(browser: Browser) {
   }
 
   console.log('Logging in...')
+
+  const cookies = await browser.cookies()
+  await browser.deleteCookie(
+    ...cookies.filter((c) => c.domain.endsWith('.slack.com'))
+  )
+
   const page = await browser.newPage()
+
+  const interval = setInterval(() => {
+    page.screenshot({ path: 'temp.png' })
+  }, 2000)
+
   await page.goto(`https://hackclub.slack.com/sign_in_with_password`, {
     waitUntil: 'domcontentloaded',
   })
+
   await page.type(selectors.email, email)
   await page.type(selectors.password, password)
   console.log('Filled in email and password')
@@ -40,26 +70,56 @@ async function login(browser: Browser) {
   await page.click(selectors.signInButton)
   console.log('Clicked sign in')
 
-  await page.waitForNavigation()
+  await sleep(5000)
   console.log('Logged in')
 
   await page.close()
+  clearInterval(interval)
+}
+
+const polyfillBundle = await esbuild.build({
+  entryPoints: ['installRTCMedia.ts'],
+  bundle: true,
+  write: false,
+})
+const polyfillCode = polyfillBundle.outputFiles[0].text
+await fs.writeFile('temp.bundle.js', polyfillCode)
+async function rtcMedia(page: Page): Promise<Page> {
+  try {
+    await page.evaluate(polyfillCode)
+  } catch (err) {
+    console.error('Error installing RTC media polyfill:')
+    throw err
+  }
+  return page
 }
 
 await login(browser)
 
-// const testPage = await browser.newPage()
-// await testPage.screenshot({ path: 'temp.png' })
-// await testPage.goto('https://mic-test.com/', {
-//   waitUntil: 'domcontentloaded',
-// })
-// await testPage.screenshot({ path: 'temp.png' })
-// await sleep(5000)
-// await testPage.click('.css-6t4ruh')
-// while (true) {
-//   await sleep(1000)
-//   await testPage.screenshot({ path: 'temp.png' })
-// }
+const testPage = await browser.newPage()
+await testPage.screenshot({ path: 'temp.png' })
+await testPage.goto('https://mic-test.com/', {
+  waitUntil: 'domcontentloaded',
+})
+testPage.on('console', async (msg) => {
+  if (!msg.text().includes('[jamcast]')) return
+  console.log('Page log:', msg.text())
+  console.log(
+    'Page log:',
+    ...(await Promise.all(msg.args().map((arg) => arg.jsonValue()))).map(
+      (arg) =>
+        typeof arg === 'string' ? arg.replace(/\[jamcast\] ?/, '') : arg
+    )
+  )
+})
+await rtcMedia(testPage)
+await testPage.screenshot({ path: 'temp.png' })
+await sleep(5000)
+await testPage.click('.css-6t4ruh')
+while (true) {
+  await sleep(1000)
+  await testPage.screenshot({ path: 'temp.png' })
+}
 
 const channelID = 'C07FFUNMXUG'
 
@@ -77,15 +137,23 @@ try {
   await page.goto(`https://app.slack.com/client/T0266FRGM/${channelID}`, {
     waitUntil: 'domcontentloaded',
   })
+  await rtcMedia(page)
   await page.waitForSelector(selectors.startHuddleButton, {
     visible: true,
     timeout: 15000,
   })
 
-  page.on('console', (msg) => {
-    if (!msg.text().includes('speciallogstring')) return
-    console.log('Page log:', msg.text())
+  page.on('console', async (msg) => {
+    if (!msg.text().includes('[jamcast]')) return
+    console.log(
+      'Page log:',
+      ...(await Promise.all(msg.args().map((arg) => arg.jsonValue()))).map(
+        (arg) =>
+          typeof arg === 'string' ? arg.replace(/\[jamcast\] ?/, '') : arg
+      )
+    )
   })
+
   await page.evaluate(async () => {
     function allJSON(data: any) {
       function makeEnumerable(obj: any) {
@@ -104,8 +172,17 @@ try {
     async function logAudio(stream: MediaStream) {
       const tracks = stream.getAudioTracks()
       for (const track of tracks) {
-        console.log('speciallogstring   ', 'Track:', track.kind, track.label, allJSON(track))
-        console.log('speciallogstring   ', JSON.stringify(Object.getOwnPropertyDescriptors(track)))
+        console.log(
+          '[jamcast]',
+          'Track:',
+          track.kind,
+          track.label,
+          allJSON(track)
+        )
+        console.log(
+          '[jamcast]',
+          JSON.stringify(Object.getOwnPropertyDescriptors(track))
+        )
       }
       const audioContext = new AudioContext()
       const source = audioContext.createMediaStreamSource(stream)
@@ -129,16 +206,12 @@ try {
 
         await new Promise((resolve) => requestAnimationFrame(resolve))
       }
-      console.log(
-        'speciallogstring   ',
-        'Volume Array:',
-        volumeArray.join(', ')
-      )
+      console.log('[jamcast]', 'Volume Array:', volumeArray.join(', '))
       await audioContext.close()
     }
 
     console.log(
-      '!!!!! speciallogstring',
+      '!!!!! [jamcast] ',
       JSON.stringify(await navigator.mediaDevices.enumerateDevices())
     )
 
@@ -153,7 +226,7 @@ try {
       const originalFunc = object[name]
       object[name] = function (...args) {
         console.log(
-          'speciallogstring   ',
+          '[jamcast]',
           `${name} called ${args.length}:`,
           ...args.map((a) => allJSON(a))
         )
@@ -162,25 +235,23 @@ try {
           return result.then(async (res) => {
             if (res instanceof MediaStream) {
               console.log(
-                'speciallogstring   ',
+                '[jamcast]',
                 `${name} returned a MediaStream\n  MediaStream info:`,
                 res.active,
                 allJSON(
-                  res
-                    .getTracks()
-                    .map((t) => ({
-                      kind: t.kind,
-                      label: t.label,
-                      deviceId: t.getSettings().deviceId,
-                      muted: t.muted,
-                      readyState: t.readyState,
-                    }))
+                  res.getTracks().map((t) => ({
+                    kind: t.kind,
+                    label: t.label,
+                    deviceId: t.getSettings().deviceId,
+                    muted: t.muted,
+                    readyState: t.readyState,
+                  }))
                 )
               )
               await logAudio(res)
             }
             console.log(
-              'speciallogstring   ',
+              '[jamcast]',
               `${name} returned (promise):`,
               typeof res,
               res?.constructor?.name,
@@ -190,7 +261,7 @@ try {
           })
         }
         console.log(
-          'speciallogstring   ',
+          '[jamcast]',
           `${name} returned:`,
           typeof result,
           result?.constructor?.name,

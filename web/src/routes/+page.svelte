@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { streamCallbacks } from '../../../webrtc'
+  import { webRTCConnect } from '../../../webrtc'
   import { untrack } from 'svelte'
 
   let stream: MediaStream | null = $state(null)
@@ -18,6 +18,7 @@
       console.log('Stream updated', newStream)
       stream = newStream
     }
+    const streamCallbacks = webRTCConnect()
     streamCallbacks.add(callback)
     return () => {
       streamCallbacks.delete(callback)
@@ -32,7 +33,7 @@
 
     const gainNode = audioContext.createGain()
     gainNode.gain.value = untrack(() => actualVolume)
-    gainNode.connect(currentAudioContext.destination)
+    gainNode.connect(audioContext.destination)
     currentGainNode = gainNode
 
     const analyzerNode = audioContext.createAnalyser()
@@ -123,11 +124,11 @@
 
   <input type="range" min="0" max="1" step="0.01" bind:value={volume} />
 </div>
-
+<!-- fill="#5bc0de" -->
 <svg
   viewBox={`0 0 ${(svgBarWidth + svgPadding) * svgBarCount - svgPadding} ${svgBarHeight}`}
   preserveAspectRatio="none"
-  fill="#5bc0de"
+  fill="#eee"
 >
   {#if frequencyData}
     {#each frequencyData as raw, index}

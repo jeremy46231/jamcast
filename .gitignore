@@ -3,6 +3,9 @@ temp*
 .librespot
 gst-plugins-rs
 
+/firefox-profile/*
+!/firefox-profile/user.js
+
 # Output
 .output
 .vercel

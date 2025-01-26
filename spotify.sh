@@ -39,6 +39,7 @@ librespot \
 gst-launch-1.0 \
     pulsesrc ! \
     audioconvert dithering=none ! \
+    audioresample ! \
     webrtcsink meta="meta,name=jamcast-stream" run-signalling-server=true  signalling-server-port=46232 &
 
 wait
