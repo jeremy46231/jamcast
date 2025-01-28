@@ -9,7 +9,6 @@ pactl load-module module-null-sink sink_name=SpotifySink
 SESSION_NAME="jamcast"
 tmux new-session -d -s "$SESSION_NAME"
 tmux split-window -h -t "$SESSION_NAME"
-tmux split-window -v -t "$SESSION_NAME:0.0"
 
 tmux send-keys -t "$SESSION_NAME:0.0" "\
   librespot \
@@ -27,10 +26,6 @@ tmux send-keys -t "$SESSION_NAME:0.1" "\
     webrtcsink \
       meta='meta,name=jamcast-stream' \
       run-signalling-server=true signalling-server-port=46232 \
-" C-m
-
-tmux send-keys -t "$SESSION_NAME:0.2" "\
-  bun web \
 " C-m
 
 tmux attach -t "$SESSION_NAME"
