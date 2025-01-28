@@ -12,7 +12,7 @@ export function webRTCConnect() {
 
   const id = nanoid() // Unique ID for the client
   api = new GstWebRTCAPI({
-    signalingServerUrl: `ws://129.146.216.190:46232`,
+    signalingServerUrl: `wss://jamcast-signalling.jer.app`,
     meta: {
       name: `browser-client-${id}`,
     },

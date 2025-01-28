@@ -80,10 +80,8 @@ I spent over 25 hours getting this to work. Why so long? Here's what I spent my 
 - Turning off background audio supression and getting Puppeteer to persist that information
 - Rejoicing when audio finally comes out of Slack, even though I have to run it locally
 
-
-
-
 For my reference, here are the setup commands I used to install stuff on the VPS.
+
 ```sh
 ####### Root Needed
 sudo su
