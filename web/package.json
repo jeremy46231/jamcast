@@ -3,7 +3,7 @@
   "scripts": {
     "dev": "bunx --bun vite dev --host 0.0.0.0 --port 46231 --strictPort",
     "build": "vite build",
-    "fullbuild": "(cd .. && bun build)"
+    "fullbuild": "(cd .. && bun run build)"
   },
   "devDependencies": {
     "@sveltejs/adapter-cloudflare": "^5.0.1",
