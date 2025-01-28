@@ -1,4 +1,4 @@
-const pulseaudioSource = 'VirtualSink.monitor'
+const pulseaudioSource = 'SpotifySink.monitor'
 const combined = Bun.spawn({
   cmd: [
     'sh',

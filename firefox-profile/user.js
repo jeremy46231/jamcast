@@ -3,6 +3,8 @@ user_pref("remote.active-protocols", 1);
 user_pref("devtools.debugger.remote-enabled", true);
 user_pref("devtools.chrome.enabled", true);
 user_pref("network.websocket.allowInsecureFromHTTPS", true);
+user_pref("media.cubeb.backend", "pulse");
+user_pref("media.audioipc.enabled", true);
 // heyo
 
 user_pref("app.normandy.api_url", "");

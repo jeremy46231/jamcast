@@ -1,30 +1,65 @@
-import puppeteer, { type Page, type Browser } from 'puppeteer'
+import puppeteer, { type Page, type Browser, type LaunchOptions } from 'puppeteer'
 import * as esbuild from 'esbuild'
 import fs from 'fs/promises'
+
+const chromeOptions: LaunchOptions = {
+  browser: 'chrome',
+  executablePath: '/snap/chromium/current/usr/lib/chromium-browser/chrome',
+  args: [
+    '--unsafely-treat-insecure-origin-as-secure=ws://129.146.216.190:46232,ws://localhost:46232',
+    '--autoplay-policy=no-user-gesture-required',
+    '--remote-debugging-port=9222',
+    '--remote-debugging-address=0.0.0.0',
+    '--no-sandbox',
+    '--enable-logging=stderr',
+  ],
+  ignoreDefaultArgs: ['--mute-audio'],
+}
+const firefoxOptions: LaunchOptions = {
+  browser: 'firefox',
+  executablePath: '/usr/bin/firefox',
+  args: ['--profile', 'firefox-profile', '-start-debugger-server', '9222'],
+  // headless: false,
+}
+const firefox = false
 
 // Launch the browser and open a new blank page
 const browser = await puppeteer.launch({
   // dumpio: true,
 
-  // browser: 'chrome',
-  // executablePath: '/snap/chromium/current/usr/lib/chromium-browser/chrome',
-  // args: [
-  //   '--unsafely-treat-insecure-origin-as-secure=ws://129.146.216.190:46232,ws://localhost:46232',
-  //   '--autoplay-policy=no-user-gesture-required',
-  //   '--remote-debugging-port=9222',
-  //   '--remote-debugging-address=0.0.0.0',
-  //   '--no-sandbox',
-  //   '--enable-logging=stderr',
-  // ],
-  // // ignoreDefaultArgs: ['--mute-audio'],
-
-  browser: 'firefox',
-  executablePath: '/usr/bin/firefox',
-  args: ['--profile', 'firefox-profile', '-start-debugger-server', '9222'],
-  headless: true,
+  ...(firefox ? firefoxOptions : chromeOptions),
 
   defaultViewport: { width: 1920, height: 1080 },
+  debuggingPort: 9222,
 })
+
+function watchPage(page: Page, allLogs = false) {
+  page.on('console', async (msg) => {
+    if (!allLogs && !msg.text().includes('[jamcast]')) return
+    try {
+      console.log(
+        'Page log:',
+        ...(await Promise.all(msg.args().map((arg) => arg.jsonValue()))).map(
+          (arg) =>
+            typeof arg === 'string' ? arg.replace(/\[jamcast\] ?/, '') : arg
+        )
+      )
+    } catch (err) {
+      console.log('Page log (plain):', msg.text().replace(/\[jamcast\] ?/, ''))
+    }
+  })
+  let screenshotInterval = setInterval(async () => {
+    const tabs = await browser.pages()
+    const active = tabs[tabs.length - 1]
+    await active.screenshot({ path: 'temp.png' })
+  }, 5000)
+
+  return {
+    [Symbol.dispose]() {
+      clearInterval(screenshotInterval)
+    },
+  }
+}
 
 const selectors = {
   email: '#email',
@@ -54,10 +89,7 @@ async function login(browser: Browser) {
   )
 
   const page = await browser.newPage()
-
-  const interval = setInterval(() => {
-    page.screenshot({ path: 'temp.png' })
-  }, 2000)
+  using watcher = watchPage(page)
 
   await page.goto(`https://hackclub.slack.com/sign_in_with_password`, {
     waitUntil: 'domcontentloaded',
@@ -74,7 +106,6 @@ async function login(browser: Browser) {
   console.log('Logged in')
 
   await page.close()
-  clearInterval(interval)
 }
 
 const polyfillBundle = await esbuild.build({
@@ -96,62 +127,38 @@ async function rtcMedia(page: Page): Promise<Page> {
 
 await login(browser)
 
-const testPage = await browser.newPage()
-await testPage.screenshot({ path: 'temp.png' })
-await testPage.goto('https://mic-test.com/', {
-  waitUntil: 'domcontentloaded',
-})
-testPage.on('console', async (msg) => {
-  if (!msg.text().includes('[jamcast]')) return
-  console.log('Page log:', msg.text())
-  console.log(
-    'Page log:',
-    ...(await Promise.all(msg.args().map((arg) => arg.jsonValue()))).map(
-      (arg) =>
-        typeof arg === 'string' ? arg.replace(/\[jamcast\] ?/, '') : arg
-    )
-  )
-})
-await rtcMedia(testPage)
-await testPage.screenshot({ path: 'temp.png' })
-await sleep(5000)
-await testPage.click('.css-6t4ruh')
-while (true) {
-  await sleep(1000)
-  await testPage.screenshot({ path: 'temp.png' })
+if (false) {
+  const testPage = await browser.newPage()
+  using watcher = watchPage(testPage, true)
+  await testPage.goto('http://jamcast.jeremywoolley.com:46231/basic', {
+    waitUntil: 'domcontentloaded',
+  })
+  console.log('Opened test page')
+  // await rtcMedia(testPage)
+  await sleep(5000)
+  // await testPage.click('.css-6t4ruh')
+  await testPage.evaluate(() => {
+    document.querySelector('audio')?.play()
+  })
+  console.log('Playing audio')
+  await sleep(Infinity)
 }
 
 const channelID = 'C07FFUNMXUG'
 
 console.log('Opening channel...')
 const page = await browser.newPage()
-const debugScreenshot = async () => {
-  await page.screenshot({ path: 'temp.png' })
-}
-
-setInterval(() => {
-  debugScreenshot()
-}, 2000)
+using watcher = watchPage(page)
 
 try {
   await page.goto(`https://app.slack.com/client/T0266FRGM/${channelID}`, {
     waitUntil: 'domcontentloaded',
   })
-  await rtcMedia(page)
+  using watcher = watchPage(page)
+  // await rtcMedia(page)
   await page.waitForSelector(selectors.startHuddleButton, {
     visible: true,
     timeout: 15000,
-  })
-
-  page.on('console', async (msg) => {
-    if (!msg.text().includes('[jamcast]')) return
-    console.log(
-      'Page log:',
-      ...(await Promise.all(msg.args().map((arg) => arg.jsonValue()))).map(
-        (arg) =>
-          typeof arg === 'string' ? arg.replace(/\[jamcast\] ?/, '') : arg
-      )
-    )
   })
 
   await page.evaluate(async () => {
@@ -270,12 +277,12 @@ try {
         return result
       }
     }
-    spyOnFunc(navigator.mediaDevices, ['getUserMedia', 'enumerateDevices'])
-    spyOnFunc(MediaStream.prototype, [
-      'getTracks',
-      'getAudioTracks',
-      'getVideoTracks',
-    ])
+    // spyOnFunc(navigator.mediaDevices, ['getUserMedia', 'enumerateDevices'])
+    // spyOnFunc(MediaStream.prototype, [
+    //   'getTracks',
+    //   'getAudioTracks',
+    //   'getVideoTracks',
+    // ])
   })
 
   console.log('Joining huddle...')
@@ -306,7 +313,6 @@ try {
   await setMuted(false)
 
   console.log('Connected to huddle')
-  await debugScreenshot()
 
   // await sleep(5000)
   // await page.click('[data-qa="more_actions_menu"]')
@@ -323,10 +329,10 @@ try {
   // await page.keyboard.press('Enter')
   // // await page.mouse.move(/* middle of screen */ 960, 540)
   // // await page.mouse.wheel({ deltaY: -1000 })
-  // await debugScreenshot()
+
+  await sleep(Infinity)
 } catch (err) {
   console.error(err)
-  await debugScreenshot()
   await page.close()
   await browser.close()
   process.exit(1)

@@ -1,0 +1,51 @@
+<script type="module">
+  const constraints = {
+    audio: true,
+    video: false,
+  }
+
+  const stream = await navigator.mediaDevices.getUserMedia(constraints)
+
+  const audioContext = new AudioContext()
+  const source = audioContext.createMediaStreamSource(stream)
+  const analyser = audioContext.createAnalyser()
+  source.connect(analyser)
+
+  analyser.fftSize = 2048
+  const bufferLength = analyser.frequencyBinCount
+  const dataArray = new Uint8Array(bufferLength)
+
+  const canvas = document.getElementById('canvas')
+  const canvasCtx = canvas.getContext('2d')
+  const WIDTH = canvas.width
+  const HEIGHT = canvas.height
+
+  const barWidth = (WIDTH / bufferLength) * 2.5
+  let barHeight
+  let x = 0
+
+  function renderFrame() {
+    requestAnimationFrame(renderFrame)
+    x = 0
+    analyser.getByteFrequencyData(dataArray)
+
+    canvasCtx.fillStyle = 'rgb(0, 0, 0)'
+    canvasCtx.fillRect(0, 0, WIDTH, HEIGHT)
+
+    for (let i = 0; i < bufferLength; i++) {
+      barHeight = dataArray[i]
+
+      const r = barHeight + 25 * (i / bufferLength)
+      const g = 250 * (i / bufferLength)
+      const b = 50
+      canvasCtx.fillStyle = `rgb(${r}, ${g}, ${b})`
+
+      canvasCtx.fillRect(x, HEIGHT - barHeight, barWidth, barHeight)
+      x += barWidth + 1
+    }
+  }
+
+  renderFrame()
+</script>
+
+<canvas id="canvas" width="300" height="300"></canvas>

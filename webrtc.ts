@@ -84,7 +84,7 @@ export function webRTCConnect() {
 
   const audioElement = document.createElement('audio')
   audioElement.autoplay = true
-  // audioElement.muted = true
+  audioElement.muted = false
   audioElement.controls = true
   document.body.insertBefore(audioElement, document.body.firstChild)
 

@@ -1,7 +1,7 @@
 {
   "type": "module",
   "scripts": {
-    "dev": "vite dev --host --port 46231",
+    "dev": "bunx --bun vite dev --host 0.0.0.0 --port 46231 --strictPort",
     "build": "vite build"
   },
   "devDependencies": {
