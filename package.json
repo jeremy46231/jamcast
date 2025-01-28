@@ -3,7 +3,8 @@
     "web": "cd web && bun run dev",
     "clone-gstwebrtc-api": "git clone --no-checkout https://gitlab.freedesktop.org/gstreamer/gst-plugins-rs.git && cd gst-plugins-rs && git sparse-checkout init && git sparse-checkout set net/webrtc/gstwebrtc-api && git checkout",
     "pull-gstwebrtc-api": "[ -d gst-plugins-rs ] && (cd gst-plugins-rs && git pull) || bun run clone-gstwebrtc-api",
-    "build-gstwebrtc-api": "bun run pull-gstwebrtc-api && cd gst-plugins-rs/net/webrtc/gstwebrtc-api && bun install"
+    "build-gstwebrtc-api": "bun run pull-gstwebrtc-api && cd gst-plugins-rs/net/webrtc/gstwebrtc-api && bun install",
+    "buuld": "bun install && bun run build-gstwebrtc-api && (cd web && bun install && bun run build)"
   },
   "type": "module",
   "dependencies": {
