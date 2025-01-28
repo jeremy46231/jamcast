@@ -82,11 +82,11 @@ export function webRTCConnect() {
   })
   findStream()
 
-  const audioElement = document.createElement('audio')
-  audioElement.autoplay = true
-  audioElement.muted = false
-  audioElement.controls = true
-  document.body.insertBefore(audioElement, document.body.firstChild)
+  const audioElement = new Audio()
+  // audioElement.autoplay = true
+  audioElement.muted = true
+  // audioElement.controls = true
+  // document.body.insertBefore(audioElement, document.body.firstChild)
 
   function streamCallback(stream: MediaStream | null) {
     if (stream) audioElement.srcObject = stream

@@ -73,9 +73,10 @@ I spent over 25 hours getting this to work. Why so long? Here's what I spent my 
 - Finding the poorly-documented Firefox preference to allow insecure websocket connections on secure domains and allow autoplay without user interaction
 - Testing it and realizing that it doesn't work still
 - Trying random things to get audio to start flowing through the audio system, but nothing works
-- Explored more workarounds, more ways of attaching a clock to the audio with a dummy audio element
-- Tried to get the audio back out of the browser again, thinking it would force audio to flow through the system
-- Installed ALSA and tried to run Chrome audio through it, but that didn't make anything change
+- Exploring more workarounds, more ways of attaching a clock to the audio with a dummy audio element
+- Trying to get the audio back out of the browser again, thinking it would force audio to flow through the system
+- Installing ALSA and trying to run Chrome audio through it, but that didn't make anything change
+- Deciding to explore running the puppeteer part locally, because I just want something to work at this point
 
 ```sh
 ####### Root Needed
