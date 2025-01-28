@@ -3,8 +3,7 @@ temp*
 .librespot
 gst-plugins-rs
 
-/firefox-profile/*
-!/firefox-profile/user.js
+/chrome-profile
 
 # Output
 .output

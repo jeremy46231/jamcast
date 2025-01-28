@@ -77,14 +77,20 @@ I spent over 25 hours getting this to work. Why so long? Here's what I spent my 
 - Trying to get the audio back out of the browser again, thinking it would force audio to flow through the system
 - Installing ALSA and trying to run Chrome audio through it, but that didn't make anything change
 - Deciding to explore running the puppeteer part locally, because I just want something to work at this point
+- Turning off background audio supression and getting Puppeteer to persist that information
+- Rejoicing when audio finally comes out of Slack, even though I have to run it locally
 
+
+
+
+For my reference, here are the setup commands I used to install stuff on the VPS.
 ```sh
 ####### Root Needed
 sudo su
 
 # gstreamer and other utilities
 # yes, this is scarily long
-apt update && apt install curl unzip pkg-config build-essential libssl-dev nodejs firefox libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev libgstreamer-plugins-bad1.0-dev gstreamer1.0-plugins-base gstreamer1.0-plugins-good gstreamer1.0-plugins-bad gstreamer1.0-plugins-ugly gstreamer1.0-libav gstreamer1.0-tools gstreamer1.0-x gstreamer1.0-alsa gstreamer1.0-gl gstreamer1.0-gtk3 gstreamer1.0-qt5 gstreamer1.0-pulseaudio 
+apt update && apt install curl unzip pkg-config build-essential libssl-dev tmux libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev libgstreamer-plugins-bad1.0-dev gstreamer1.0-plugins-base gstreamer1.0-plugins-good gstreamer1.0-plugins-bad gstreamer1.0-plugins-ugly gstreamer1.0-libav gstreamer1.0-tools gstreamer1.0-x gstreamer1.0-alsa gstreamer1.0-gl gstreamer1.0-gtk3 gstreamer1.0-qt5 gstreamer1.0-pulseaudio
 
 # rust toolchain
 curl -fsSL https://sh.rustup.rs | sh -s -- -y && . "$HOME/.cargo/env" && rustup default stable
@@ -107,6 +113,7 @@ exit
 curl -fsSL https://bun.sh/install | bash
 # alternate: npm i -g bun
 bun i
+bun build-gstwebrtc-api
 
 # done! to make sure it is all installed correctly:
 librespot -B ? | grep gstreamer
