@@ -21,13 +21,13 @@ I spent over 25 hours getting this to work. Why so long? Here's what I spent my 
 - Trying to figure out why no audio is coming through the huddle
 - Debugging librespot's audio output to get audio into the PulseAudio world
 - Trying to figure out why the commands aren't properly connecting my null sink to my virtual microphone
-- Figuring out which of Chrome's over 1,500 command line flags might help it pick up live audo from the virtual microphone
+- Figuring out which of Chrome's over 1,500 command line flags might help it pick up live audio from the virtual microphone
 - Debugging, debugging, debugging why the audio isn't coming through
 - Finally getting the audio to show up in the browser console
 - Realizing that Slack still can't understand the microphone from Pulse
 - Giving up on devcontainers, which has been a pain the whole time
 - Re-setting up everything on my VPS directly, remoting in with VSCode's SSH support over Tailscale
-- Getting everything to install in apprxoimately the same way on the VPS
+- Getting everything to install in approximately the same way on the VPS
 - Reading about Pulse flags to try to make the microphone look like a real microphone
 - Inspecting Slack's client-side code to see what it's looking for in a microphone
 - Monkey-patching the MediaDevices API to control what Slack sees in an attempt to get it to recognize the audio
@@ -59,7 +59,7 @@ I spent over 25 hours getting this to work. Why so long? Here's what I spent my 
 - Reading the MediaDevices spec to make a standards-compliantish fake microphone using the MediaStream obtained via webRTC
 - Debugging firewall issues in Oracle's complex interface and cryptic iptables rules to get connections to go through on plain IP addresses
 - Finding many Chromium bugs and reading the Chromium source code to figure out that Chrome's audio system is architecturally broken
-- Attempting to use the reccomended workaround of connecting the MediaStream to a blank audio element, but it doesn't work maybe
+- Attempting to use the recommended workaround of connecting the MediaStream to a blank audio element, but it doesn't work maybe
 - Bypassing Chrome's restriction on insecure websocket connections on secure domains using one of the >1,500 command line flags it has
 - Testing the audio, now the mic shows up but audio doesn't come through anywhere, even in my own tests
 - Thinking that because Firefox has a much more reliable audio engine, it might be easier to use
@@ -79,6 +79,26 @@ I spent over 25 hours getting this to work. Why so long? Here's what I spent my 
 - Deciding to explore running the puppeteer part locally, because I just want something to work at this point
 - Turning off background audio supression and getting Puppeteer to persist that information
 - Rejoicing when audio finally comes out of Slack, even though I have to run it locally
+- Fighting with security errors in trying to deploy the web interface to an HTTPS server
+- Setting up build systems, nginx, and DNS records to get the web interface to work
+
+Here's the setup I landed on that works:
+
+- Spotify server near Arizona with a Premium account
+- Librespot on the VPS pretending to be a Spotify-compatible speaker, configured to output to a PulseAudio null sink
+- PulseAudio, the audio server running in user mode on the VPS
+- GStreamer, pulling from PulseAudio with its pasource plugin and reencoding it
+- GStreamer's webrtcsink plugin, adjusting adaptive bitrate and streaming it via webRTC to clients
+- The embedded signalling server in webrtcsink, running on port 46232
+- nginx, proxying the signalling server websocket to port 80
+- Cloudflare, proxying the signalling sever websocket to jamcast-signalling.jer.app over HTTPS
+- A svelte frontend, compiled by and deployed to Cloudflare Pages
+- The gstwebrtc-api, extracted from gst-plugins-rs and compiled into the Svelte frontend and pointed at the HTTPS signalling server
+- On my Mac whenever I decide to run it, a Puppeteer script that logs into Slack, injects it with a combination of a fake polyfill MediaDevices API and the gstwebrtc-api MediaStream to fool Slack into thinking the remote stream is a microphone, and navigates to and joins the huddle
+
+It's definitely way overcomplicated, but it works, so I'm not touching it.
+
+## Setup
 
 For my reference, here are the setup commands I used to install stuff on the VPS.
 
