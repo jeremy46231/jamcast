@@ -3,6 +3,7 @@
   import { untrack } from 'svelte'
 
   let stream: MediaStream | null = $state(null)
+  let connected = $derived(stream !== null)
   let currentAudioContext: AudioContext | null = $state(null)
   let currentGainNode: GainNode | null = $state(null)
   let currentAnalyzerNode: AnalyserNode | null = $state(null)
@@ -118,17 +119,29 @@
 </script>
 
 <div class="controls">
-  <button onclick={() => (isMuted = !isMuted)}>
-    {isMuted ? 'Play' : 'Pause'}
+  <div class="status-indicator">
+    <div class={['dot', { 'dot-connected': connected, 'dot-disconnected': !connected }]}></div>
+    <div class={['pulse', { 'pulse-anim': connected }]}></div>
+  </div>
+  <button
+    onclick={() => (isMuted = !isMuted)}
+    disabled={!connected}
+  >
+    {!connected ? 'Disconnected' : isMuted ? 'Play' : 'Pause'}
   </button>
-
-  <input type="range" min="0" max="1" step="0.01" bind:value={volume} />
+  <input
+    type="range"
+    min="0"
+    max="1"
+    step="0.01"
+    bind:value={volume}
+    disabled={!connected}
+  />
 </div>
-<!-- fill="#5bc0de" -->
 <svg
   viewBox={`0 0 ${(svgBarWidth + svgPadding) * svgBarCount - svgPadding} ${svgBarHeight}`}
   preserveAspectRatio="none"
-  fill="#eee"
+  fill={isMuted ? '#eee': '#00cc44'}
 >
   {#if frequencyData}
     {#each frequencyData as raw, index}
@@ -161,17 +174,64 @@
     position: absolute;
     top: 0;
     left: 0;
-    right: 0;
     display: flex;
     align-items: center;
-    margin: 1rem;
-    gap: 0.5rem;
+    padding: 1rem;
+    gap: 1rem;
+    background-color: rgba(250, 250, 250, 0.5);
+  }
+
+  .status-indicator {
+    position: relative;
+    width: 0.7rem;
+    height: 0.7rem;
+  }
+
+  .dot {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+  }
+
+  .dot-connected {
+    background-color: #00cc44;
+  }
+
+  .dot-disconnected {
+    background-color: #aaa;
+  }
+
+  .pulse {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    pointer-events: none;
+    transform: scale(1);
+    opacity: 0;
+    background-color: #00cc44;
+  }
+
+  .pulse-anim {
+    animation: pulse 2s infinite;
+  }
+
+  @keyframes pulse {
+    0% {
+      transform: scale(1);
+      opacity: 0.3;
+    }
+    75% {
+      transform: scale(2.5);
+      opacity: 0;
+    }
   }
 
   button {
-    width: 80px;
+    min-width: 14ch;
     text-align: center;
-    padding: 0.5rem 1rem;
+    padding: 0.5rem;
   }
 
   svg {
