@@ -136,19 +136,25 @@
   })
 </script>
 
-<title>Jamcast</title>
-<meta name="description" content="Listen to music streamed from the Jamcast Spotify Jam at a higher quality and lower latency than the Slack huddle." />
-<meta property="og:title" content="Jamcast" />
-<meta property="og:description" content="Listen to music streamed from the Jamcast Spotify Jam at a higher quality and lower latency than the Slack huddle." />
-<meta property="og:url" content="https://jamcast.jer.app" />
-<meta property="og:image" content="https://jamcast.jer.app/logo.png" />
-<meta property="og:type" content="website" />
-<meta name="twitter:title" content="Jamcast" />
-<meta name="twitter:description" content="Listen to music streamed from the Jamcast Spotify Jam at a higher quality and lower latency than the Slack huddle." />
-<meta name="twitter:image" content="https://jamcast.jer.app/logo.png" />
-
-<!-- set up social data for embeds -->
-
+<svelte:head>
+  <title>Jamcast</title>
+  <meta property="og:title" content="Jamcast" />
+  <meta name="twitter:title" content="Jamcast" />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://jamcast.jer.app" />
+  <meta
+    name="description"
+    content="Listen to music streamed from the Jamcast Spotify Jam at a higher quality and lower latency than the Slack huddle."
+  />
+  <meta
+    property="og:description"
+    content="Listen to music streamed from the Jamcast Spotify Jam at a higher quality and lower latency than the Slack huddle."
+  />
+  <meta
+    name="twitter:description"
+    content="Listen to music streamed from the Jamcast Spotify Jam at a higher quality and lower latency than the Slack huddle."
+  />
+</svelte:head>
 
 <div class="controls">
   <div
@@ -196,7 +202,7 @@
 </svg>
 <div class="links">
   {#if isEmbedded}
-    <a href={browser ? window.location.href : '#'} target="jamcast"
+    <a href={'#'} target="jamcast" onclick={() => window.open(location.href, 'jamcast')}
       >Open in Browser</a
     >
   {:else}
