@@ -1,9 +1,14 @@
 <script lang="ts">
   import { webRTCConnect } from '../../../webrtc'
   import { untrack } from 'svelte'
+  import { browser } from '$app/environment'
+
+  // Variables
+  const isEmbedded = browser ? window.parent !== window : false
 
   let stream: MediaStream | null = $state(null)
   let connected = $derived(stream !== null)
+
   let currentAudioContext: AudioContext | null = $state(null)
   let currentGainNode: GainNode | null = $state(null)
   let currentAnalyzerNode: AnalyserNode | null = $state(null)
@@ -11,9 +16,17 @@
   let frequencyData: number[] | null = $state(null)
 
   let isMuted = $state(true)
+  let autoplayAttempted = $state(false)
   let volume = $state(1)
   let actualVolume = $derived(isMuted ? 0 : volume)
 
+  const svgBarWidth = 3
+  const svgPadding = 1
+  const svgBarCount = 128
+  const svgBarHeight = 200
+
+  // Media streaming
+  // Get streams from WebRTC
   $effect(() => {
     const callback = (newStream: MediaStream | null) => {
       console.log('Stream updated', newStream)
@@ -25,7 +38,7 @@
       streamCallbacks.delete(callback)
     }
   })
-
+  // Set up audio context
   $effect(() => {
     if (!stream) return
 
@@ -47,14 +60,26 @@
     }, 10)
     currentAnalyzerNode = analyzerNode
 
+    audioContext.resume()
+    if (!autoplayAttempted && audioContext.state === 'running') {
+      isMuted = false
+    }
+    autoplayAttempted = true
+
     return () => {
       gainNode.disconnect()
       clearInterval(analyzerInterval)
     }
   })
-
+  // Connect streams to audio context
   $effect(() => {
-    if (!stream || !currentAudioContext || !currentGainNode || !currentAnalyzerNode) return
+    if (
+      !stream ||
+      !currentAudioContext ||
+      !currentGainNode ||
+      !currentAnalyzerNode
+    )
+      return
 
     const source = currentAudioContext.createMediaStreamSource(stream)
     source.connect(currentGainNode)
@@ -65,6 +90,7 @@
     }
   })
 
+  // Attach volume control to audio context
   $effect(() => {
     if (currentGainNode) {
       currentGainNode.gain.value = actualVolume
@@ -74,6 +100,7 @@
     }
   })
 
+  // Media metadata
   $effect(() => {
     stream
     isMuted
@@ -103,30 +130,42 @@
       navigator.mediaSession.setPositionState(undefined)
     }
   })
+  // Update media metadata playback state
   $effect(() => {
     navigator.mediaSession.playbackState = isMuted ? 'paused' : 'playing'
   })
-
-  function logMap(x: number, k = 1) {
-    if (x < 0 || x > 1) throw new RangeError('Input x must be in [0,1]')
-    return Math.log(1 + k * x) / Math.log(1 + k)
-  }
-
-  const svgBarWidth = 3
-  const svgPadding = 1
-  const svgBarCount = 128
-  const svgBarHeight = 200
 </script>
 
+<title>Jamcast</title>
+<meta name="description" content="Listen to music streamed from the Jamcast Spotify Jam at a higher quality and lower latency than the Slack huddle." />
+<meta property="og:title" content="Jamcast" />
+<meta property="og:description" content="Listen to music streamed from the Jamcast Spotify Jam at a higher quality and lower latency than the Slack huddle." />
+<meta property="og:url" content="https://jamcast.jer.app" />
+<meta property="og:image" content="https://jamcast.jer.app/logo.png" />
+<meta property="og:type" content="website" />
+<meta name="twitter:title" content="Jamcast" />
+<meta name="twitter:description" content="Listen to music streamed from the Jamcast Spotify Jam at a higher quality and lower latency than the Slack huddle." />
+<meta name="twitter:image" content="https://jamcast.jer.app/logo.png" />
+
+<!-- set up social data for embeds -->
+
+
 <div class="controls">
-  <div class="status-indicator">
-    <div class={['dot', { 'dot-connected': connected, 'dot-disconnected': !connected }]}></div>
+  <div
+    class="status-indicator"
+    aria-label={connected ? 'Connected' : 'Disconnected'}
+    title={connected ? 'Connected' : 'Disconnected'}
+    role="status"
+  >
+    <div
+      class={[
+        'dot',
+        { 'dot-connected': connected, 'dot-disconnected': !connected },
+      ]}
+    ></div>
     <div class={['pulse', { 'pulse-anim': connected }]}></div>
   </div>
-  <button
-    onclick={() => (isMuted = !isMuted)}
-    disabled={!connected}
-  >
+  <button onclick={() => (isMuted = !isMuted)} disabled={!connected}>
     {!connected ? 'Disconnected' : isMuted ? 'Play' : 'Pause'}
   </button>
   <input
@@ -141,7 +180,7 @@
 <svg
   viewBox={`0 0 ${(svgBarWidth + svgPadding) * svgBarCount - svgPadding} ${svgBarHeight}`}
   preserveAspectRatio="none"
-  fill={isMuted ? '#eee': '#00cc44'}
+  fill="#eee"
 >
   {#if frequencyData}
     {#each frequencyData as raw, index}
@@ -155,6 +194,20 @@
     {/each}
   {/if}
 </svg>
+<div class="links">
+  {#if isEmbedded}
+    <a href={browser ? window.location.href : '#'} target="jamcast"
+      >Open in Browser</a
+    >
+  {:else}
+    <a href="https://app.slack.com/huddle/T0266FRGM/C07FFUNMXUG" target="slack"
+      >Join Huddle</a
+    >
+  {/if}
+  <a href="https://github.com/jeremy46231/jamcast#jamcast" target="jamcast-repo"
+    >GitHub Repo</a
+  >
+</div>
 
 <style>
   :global(*) {
@@ -165,7 +218,6 @@
 
   :global(body) {
     font-family: sans-serif;
-    background-color: #fafafa;
     height: 100vh;
     overflow: hidden;
   }
@@ -174,11 +226,14 @@
     position: absolute;
     top: 0;
     left: 0;
+    right: 0;
     display: flex;
     align-items: center;
     padding: 1rem;
     gap: 1rem;
-    background-color: rgba(250, 250, 250, 0.5);
+    background-color: transparent;
+    max-width: 45ch;
+    flex-wrap: wrap;
   }
 
   .status-indicator {
@@ -203,7 +258,8 @@
 
   .pulse {
     position: absolute;
-    top: 0; left: 0;
+    top: 0;
+    left: 0;
     width: 100%;
     height: 100%;
     border-radius: 50%;
@@ -234,9 +290,29 @@
     padding: 0.5rem;
   }
 
+  input[type='range'] {
+    flex: 1;
+  }
+
   svg {
     display: block;
     width: 100%;
     height: 100%;
+  }
+
+  .links {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    padding: 1rem;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.5rem;
+  }
+  .links a {
+    color: blue;
+    display: inline-block;
+    max-width: 100%;
+    white-space: normal;
   }
 </style>

@@ -1,6 +1,16 @@
+<img align="right" width="64" height="64" src="logo circle.svg">
+
 # Jamcast
 
-I spent over 25 hours getting this to work. Why so long? Here's what I spent my time on, in approximate order:
+Share music in a Slack huddle! Jamcast streams music from a cooperative Spotify Jam to a Slack huddle and a higher-quality website.
+
+I run these huddles in my channel in the [Hack Club Slack](https://hackclub.com/slack), [#jeremy-rambles](https://hackclub.slack.com/archives/C07FFUNMXUG). You can view the website at [jamcast.jer.app](https://jamcast.jer.app).
+
+Jamcast works by creating a virtual Spotify speaker with librespot, which is broadcast over WebRTC with GStreamer. This stream is consumed by the website, as well as a Puppeteer instance which logs into Slack and patches the stream into the huddle microphone.
+
+## Process
+
+I spent over 30 hours on this project. Why so long? Here's what I spent my time on, in approximate order:
 
 - Researching Spotify APIs, determining what API to use, what library would work
 - Getting a Spotify Premium account (thanks Arnav :D you're the best)
@@ -81,6 +91,13 @@ I spent over 25 hours getting this to work. Why so long? Here's what I spent my 
 - Rejoicing when audio finally comes out of Slack, even though I have to run it locally
 - Fighting with security errors in trying to deploy the web interface to an HTTPS server
 - Setting up build systems, nginx, and DNS records to get the web interface to work
+- Improving the web interface design, making it look nice
+- Learning about the Slack Block Kit video element, which is essentially an iframe
+- Setting up a Slack app and connecting to it in the local code
+- Figuring out how to find the message corresponding to the huddle the user account just joined to send a video element containing the web interface
+- Building an animated indicator light to show when the backend server is connected and disabling controls when it's not
+- Designing a vector logo based on the Spotify logo and Hack Club brand colors in Figma and implementing it across the project
+- Writing the README
 
 Here's the setup I landed on that works:
 
@@ -106,8 +123,8 @@ For my reference, here are the setup commands I used to install stuff on the VPS
 ####### Root Needed
 sudo su
 
-# gstreamer and other utilities
-# yes, this is scarily long
+# gstreamer and other utilities (curl, unzip, tmux, compiler libraries)
+# yes, this is scarily long ¯\_(ツ)_/¯
 apt update && apt install curl unzip pkg-config build-essential libssl-dev tmux libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev libgstreamer-plugins-bad1.0-dev gstreamer1.0-plugins-base gstreamer1.0-plugins-good gstreamer1.0-plugins-bad gstreamer1.0-plugins-ugly gstreamer1.0-libav gstreamer1.0-tools gstreamer1.0-x gstreamer1.0-alsa gstreamer1.0-gl gstreamer1.0-gtk3 gstreamer1.0-qt5 gstreamer1.0-pulseaudio
 
 # rust toolchain
