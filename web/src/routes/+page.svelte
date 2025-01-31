@@ -2,9 +2,13 @@
   import { webRTCConnect } from '../../../webrtc'
   import { untrack } from 'svelte'
   import { browser } from '$app/environment'
+  import { UAParser } from 'ua-parser-js'
 
   // Variables
   const isEmbedded = browser ? window.parent !== window : false
+  const isSafari = browser
+    ? new UAParser().getBrowser().name === 'Safari'
+    : false
 
   let stream: MediaStream | null = $state(null)
   let connected = $derived(stream !== null)
@@ -156,6 +160,21 @@
   />
 </svelte:head>
 
+{#if isSafari}
+  <div style="padding: 1rem; margin-top: 5rem;">
+    <p>
+      <b
+        >Alert: Safari is not compatible with this website. You can still join
+        the huddle, though!</b
+      >
+    </p>
+    <p>
+      I do not know why, but Safari doesn't seem to work with these APIs. It
+      should work, but it doesn't. Of course it's Safari, ugh lol
+    </p>
+  </div>
+{/if}
+
 <div class="controls">
   <div
     class="status-indicator"
@@ -183,6 +202,7 @@
     disabled={!connected}
   />
 </div>
+
 <svg
   viewBox={`0 0 ${(svgBarWidth + svgPadding) * svgBarCount - svgPadding} ${svgBarHeight}`}
   preserveAspectRatio="none"
@@ -200,20 +220,20 @@
     {/each}
   {/if}
 </svg>
-<div class="links">
-  {#if isEmbedded}
-    <a href={'#'} target="jamcast" onclick={() => window.open(location.href, 'jamcast')}
-      >Open in Browser</a
+
+{#if !isEmbedded}
+  <div class="links">
+    <a href="https://app.slack.com/huddle/T0266FRGM/C07FFUNMXUG" target="slack">
+      Join Huddle
+    </a>
+    <a
+      href="https://github.com/jeremy46231/jamcast#jamcast"
+      target="jamcast-repo"
     >
-  {:else}
-    <a href="https://app.slack.com/huddle/T0266FRGM/C07FFUNMXUG" target="slack"
-      >Join Huddle</a
-    >
-  {/if}
-  <a href="https://github.com/jeremy46231/jamcast#jamcast" target="jamcast-repo"
-    >GitHub Repo</a
-  >
-</div>
+      GitHub Repo
+    </a>
+  </div>
+{/if}
 
 <style>
   :global(*) {

@@ -21,6 +21,29 @@ export async function sendStreamMessage(channel: string) {
     text: 'Jamcast',
     blocks: [
       {
+        type: 'rich_text',
+        elements: [
+          {
+            type: 'rich_text_section',
+            elements: [
+              {
+                type: 'text',
+                text: 'Stream the music in higher quality at ',
+              },
+              {
+                type: 'link',
+                url: 'https://jamcast.jer.app',
+                text: 'jamcast.jer.app',
+              },
+              {
+                type: 'text',
+                text: ' or below:',
+              },
+            ],
+          },
+        ],
+      },
+      {
         type: 'video',
         title: {
           type: 'plain_text',

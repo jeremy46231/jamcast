@@ -13,6 +13,7 @@
     "@types/bun": "^1.1.17",
     "esbuild": "^0.24.2",
     "nanoid": "^5.0.9",
-    "puppeteer": "^23.10.4"
+    "puppeteer": "^23.10.4",
+    "ua-parser-js": "^2.0.0"
   }
 }

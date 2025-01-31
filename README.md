@@ -97,7 +97,8 @@ I spent over 30 hours on this project. Why so long? Here's what I spent my time 
 - Figuring out how to find the message corresponding to the huddle the user account just joined to send a video element containing the web interface
 - Building an animated indicator light to show when the backend server is connected and disabling controls when it's not
 - Designing a vector logo based on the Spotify logo and Hack Club brand colors in Figma and implementing it across the project
-- Writing the README
+- Adding links and making sure it works correctly within Slack video elements
+- Writing the README and polishing everything
 
 Here's the setup I landed on that works:
 

@@ -97,40 +97,40 @@ export function webRTCConnect() {
   return streamCallbacks
 }
 
-if ('document' in globalThis) {
-  let testStream: MediaStream | null = null
-  streamCallbacks.add((stream) => {
-    testStream = stream
-  })
-  setInterval(async () => {
-    const stream = testStream
-    if (!stream) return
+// if ('document' in globalThis) {
+//   let testStream: MediaStream | null = null
+//   streamCallbacks.add((stream) => {
+//     testStream = stream
+//   })
+//   setInterval(async () => {
+//     const stream = testStream
+//     if (!stream) return
 
-    const audioContext = new AudioContext()
-    const source = audioContext.createMediaStreamSource(stream)
-    const analyser = audioContext.createAnalyser()
-    source.connect(analyser)
+//     const audioContext = new AudioContext()
+//     const source = audioContext.createMediaStreamSource(stream)
+//     const analyser = audioContext.createAnalyser()
+//     source.connect(analyser)
 
-    analyser.fftSize = 256
-    const bufferLength = analyser.frequencyBinCount
-    const dataArray = new Uint8Array(bufferLength)
-    const volumeArray: number[] = []
+//     analyser.fftSize = 256
+//     const bufferLength = analyser.frequencyBinCount
+//     const dataArray = new Uint8Array(bufferLength)
+//     const volumeArray: number[] = []
 
-    for (let i = 0; i < 10; i++) {
-      analyser.getByteFrequencyData(dataArray)
+//     for (let i = 0; i < 10; i++) {
+//       analyser.getByteFrequencyData(dataArray)
 
-      // Calculate the average volume level from the frequency data
-      let total = 0
-      for (let i = 0; i < bufferLength; i++) {
-        total += dataArray[i]
-      }
+//       // Calculate the average volume level from the frequency data
+//       let total = 0
+//       for (let i = 0; i < bufferLength; i++) {
+//         total += dataArray[i]
+//       }
 
-      const averageVolume = total / bufferLength
-      volumeArray.push(averageVolume)
+//       const averageVolume = total / bufferLength
+//       volumeArray.push(averageVolume)
 
-      await new Promise((resolve) => requestAnimationFrame(resolve))
-    }
-    console.log('[jamcast]', 'Volume Array:', volumeArray.join(', '))
-    await audioContext.close()
-  }, 2000)
-}
+//       await new Promise((resolve) => requestAnimationFrame(resolve))
+//     }
+//     console.log('[jamcast]', 'Volume Array:', volumeArray.join(', '))
+//     await audioContext.close()
+//   }, 2000)
+// }
